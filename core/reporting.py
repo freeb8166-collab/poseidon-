@@ -51,4 +51,62 @@ class ReportGenerator:
             "summary": report["summary"]
         }
     
-    def _extract_findings
+    def _extract_findings(self, results: List) -> List[Dict]:
+        findings = []
+        for result in results:
+            if result.get('status') == 'success':
+                data = result.get('data', {})
+                if data.get('vulnerabilities'):
+                    for vuln in data['vulnerabilities']:
+                        findings.append({
+                            "type": "vulnerability",
+                            "description": vuln,
+                            "severity": "high"
+                        })
+        return findings
+    
+    def _generate_html(self, report: Dict) -> str:
+        return f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{report['header']['title']}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }}
+        .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }}
+        .header {{ background: #2c3e50; color: white; padding: 20px; border-radius: 5px; }}
+        .summary {{ background: #ecf0f1; padding: 20px; margin: 20px 0; border-radius: 5px; }}
+        .finding {{ background: #f9f9f9; padding: 15px; margin: 10px 0; border-left: 4px solid #e74c3c; }}
+        .recommendation {{ background: #e8f5e9; padding: 15px; margin: 10px 0; border-left: 4px solid #4caf50; }}
+        .score {{ font-size: 48px; font-weight: bold; color: #2c3e50; }}
+        .high {{ color: #e74c3c; }}
+        .medium {{ color: #f39c12; }}
+        .low {{ color: #27ae60; }}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>{report['header']['title']}</h1>
+        <p><strong>Mission:</strong> {report['header']['mission']}</p>
+        <p><strong>Cible:</strong> {report['header']['target']}</p>
+        <p><strong>Date:</strong> {report['header']['date']}</p>
+    </div>
+    
+    <div class="summary">
+        <h2>Résumé</h2>
+        <div class="score">{report['summary']['risk_score']}/100</div>
+        <p>Vérifications: {report['summary']['total_checks']}</p>
+        <p>Erreurs: {report['summary']['errors']}</p>
+    </div>
+    
+    <h2>Découvertes</h2>
+    {''.join([f'<div class="finding"><strong>{f["type"]}</strong> - {f["description"]} (Sévérité: {f["severity"]})</div>' for f in report.get('findings', [])])}
+    
+    <h2>Recommandations</h2>
+    {''.join([f'<div class="recommendation">✓ {r}</div>' for r in report.get('recommendations', [])])}
+</div>
+</body>
+</html>
+        """
